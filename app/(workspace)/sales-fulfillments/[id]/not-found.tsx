@@ -1,0 +1,2 @@
+import Link from "next/link";
+export default function NotFound() { return <div className="rounded-xl border border-[#e2e8f0] bg-white p-8"><h1 className="text-xl font-semibold text-[#0f172a]">Fulfillment not found</h1><p className="mt-2 text-sm text-[#64748b]">This document does not exist in the current workspace.</p><Link href="/sales-fulfillments" className="mt-5 inline-flex text-sm font-semibold text-[#00a63e] hover:underline">Back to fulfillments</Link></div>; }
