@@ -7,6 +7,7 @@ import { getWorkspaceContext } from "@/lib/supabase/workspace";
 export type InvoiceActionResult = { ok: boolean; message: string; invoiceId?: string };
 export type PaymentMethod = "cash" | "card" | "upi" | "bank_transfer" | "other";
 export type PaymentActionResult = { ok: boolean; message: string; paymentId?: string };
+export type CreditActionResult = { ok: boolean; message: string; applicationId?: string };
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const MONEY = /^(?:0|[1-9][0-9]{0,15})(?:\.[0-9]{1,2})?$/;
@@ -19,6 +20,10 @@ function contextError(status: "unauthenticated" | "needs_onboarding" | "error"):
 
 function paymentContextError(status: "unauthenticated" | "needs_onboarding" | "error"): PaymentActionResult {
   return { ok: false, message: status === "unauthenticated" ? "Your session has expired. Please sign in again." : "Create a workspace before managing payments." };
+}
+
+function creditContextError(status: "unauthenticated" | "needs_onboarding" | "error"): CreditActionResult {
+  return { ok: false, message: status === "unauthenticated" ? "Your session has expired. Please sign in again." : "Create a workspace before applying customer credit." };
 }
 
 export async function createInvoiceFromFulfillment(fulfillmentId: string): Promise<InvoiceActionResult> {
@@ -87,4 +92,54 @@ export async function recordInvoicePayment(input: {
   revalidatePath("/invoices");
   revalidatePath(`/invoices/${input.invoiceId}`);
   return { ok: true, message: "Payment recorded.", paymentId: data };
+}
+
+export async function applyCustomerCredit(input: {
+  invoiceId: string;
+  amount: string;
+  paymentDate: string;
+  reference: string;
+  notes: string;
+  clientRequestId: string;
+}): Promise<CreditActionResult> {
+  if (!UUID.test(input.invoiceId) || !UUID.test(input.clientRequestId)) return { ok: false, message: "This credit application request is invalid." };
+  if (!MONEY.test(input.amount) || input.amount.replace(/[.]/g, "").replace(/^0+/, "") === "") return { ok: false, message: "Enter a credit amount with up to two decimal places." };
+  if (!DATE.test(input.paymentDate)) return { ok: false, message: "Enter a valid application date." };
+  if (input.reference.length > 100 || input.notes.length > 1000) return { ok: false, message: "Credit details are too long." };
+
+  const context = await getWorkspaceContext();
+  if (context.status !== "ready") return creditContextError(context.status);
+  const { data: allowed, error: permissionError } = await context.supabase.rpc("has_permission", { required_permission: "payments.create" });
+  if (permissionError) return { ok: false, message: "Unable to verify payment permissions." };
+  if (allowed !== true) return { ok: false, message: "You do not have permission to apply customer credit." };
+
+  const { data, error } = await context.supabase.rpc("apply_customer_credit", {
+    p_invoice_id: input.invoiceId,
+    p_amount: input.amount,
+    p_payment_date: input.paymentDate,
+    p_reference: input.reference.trim() || null,
+    p_notes: input.notes.trim() || null,
+    p_client_request_id: input.clientRequestId,
+  });
+  if (error || !data) {
+    const message = error?.message || "";
+    if (message.includes("Not authorized")) return { ok: false, message: "You do not have permission to apply customer credit." };
+    if (message.includes("Invoice not found") || message.includes("Customer not found")) return { ok: false, message: "This invoice or customer no longer exists." };
+    if (message.includes("Cancelled")) return { ok: false, message: "Cancelled invoices cannot receive customer credit." };
+    if (message.includes("future")) return { ok: false, message: "Application date cannot be in the future." };
+    if (message.includes("before the invoice")) return { ok: false, message: "Application date cannot be before the invoice date." };
+    if (message.includes("available customer credit")) return { ok: false, message: "The credit is no longer fully available. Refresh and try again." };
+    if (message.includes("invoice balance")) return { ok: false, message: "Credit cannot exceed the invoice balance." };
+    if (message.includes("already reflected")) return { ok: false, message: "Credit from this invoice is already reflected in its balance." };
+    if (message.includes("request ID")) return { ok: false, message: "This credit application was already submitted with different details." };
+    if (message.includes("no longer available")) return { ok: false, message: "The credit is no longer available. Refresh and try again." };
+    return { ok: false, message: "Unable to apply customer credit. Refresh and try again." };
+  }
+  revalidatePath("/invoices");
+  revalidatePath(`/invoices/${input.invoiceId}`);
+  revalidatePath("/payments");
+  revalidatePath("/customers");
+  revalidatePath("/reports");
+  revalidatePath("/protected");
+  return { ok: true, message: "Customer credit applied.", applicationId: data };
 }

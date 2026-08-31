@@ -25,5 +25,7 @@ export default async function InvoiceDetailPage({ params }: { params: Promise<{ 
   const { data: invoice, error } = await invoiceQuery;
   if (error) redirect("/auth/error?error=Unable%20to%20load%20invoice");
   if (!invoice) notFound();
-  return <InvoiceDetail invoice={invoice as unknown as InvoiceDetailRecord} canViewPayments={canViewPayments === true} canRecordPayment={canRecordPayment === true} canCreateReturn={canCreateReturn === true} canViewReturns={canViewReturns === true} />;
+  const { data: creditBalance, error: creditError } = canViewPayments === true ? await context.supabase.rpc("get_invoice_credit_balance", { p_invoice_id: id }) : { data: 0, error: null };
+  const customerCreditAvailable = creditError ? 0 : Math.max(Number(creditBalance) || 0, 0);
+  return <InvoiceDetail invoice={invoice as unknown as InvoiceDetailRecord} canViewPayments={canViewPayments === true} canRecordPayment={canRecordPayment === true} canCreateReturn={canCreateReturn === true} canViewReturns={canViewReturns === true} customerCreditAvailable={customerCreditAvailable} />;
 }

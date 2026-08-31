@@ -3,10 +3,10 @@
 import Link from "next/link";
 import { ArrowLeft, CheckCircle2, Printer } from "lucide-react";
 
-type ReceiptPayment = { id: string; amount: string | number; payment_date: string; payment_method: "cash" | "card" | "upi" | "bank_transfer" | "other"; reference: string | null; notes: string | null };
+type ReceiptPayment = { id: string; amount: string | number; payment_date: string; payment_method: "cash" | "card" | "upi" | "bank_transfer" | "other" | "customer_credit"; reference: string | null; notes: string | null };
 export type PaymentReceiptRecord = { payment: ReceiptPayment; invoice: { id: string; invoice_number: string; invoice_date: string; business_name: string; customer_name: string; customer_email: string | null; customer_mobile: string | null; customer_address: string | null } };
 
-const methods: Record<ReceiptPayment["payment_method"], string> = { cash: "Cash", card: "Card", upi: "UPI", bank_transfer: "Bank transfer", other: "Other" };
+const methods: Record<ReceiptPayment["payment_method"], string> = { cash: "Cash", card: "Card", upi: "UPI", bank_transfer: "Bank transfer", other: "Other", customer_credit: "Customer credit" };
 function number(value: string | number) { const parsed = Number(value); return Number.isFinite(parsed) ? parsed : 0; }
 function money(value: string | number) { return number(value).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
 function date(value: string) { const parsed = new Date(`${value}T00:00:00.000Z`); return Number.isNaN(parsed.getTime()) ? "-" : parsed.toLocaleDateString("en-GB", { day: "2-digit", month: "long", year: "numeric", timeZone: "UTC" }); }

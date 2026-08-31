@@ -26,7 +26,9 @@ import { LogoutButton } from "@/components/logout-button";
 import { WorkspaceHeader } from "@/components/workspace-header";
 
 type Icon = typeof LayoutDashboard;
-type NavItem = { label: string; href: string };
+type SetupKey = "units" | "warehouses" | "items" | "vendors" | "customers";
+export type SetupProgress = Record<SetupKey, boolean>;
+type NavItem = { label: string; href: string; setupKey?: SetupKey; step?: number };
 type NavEntry =
   | { label: string; href: string; icon: Icon }
   | { label: string; icon: Icon; items: NavItem[] };
@@ -36,13 +38,21 @@ type Flyout = { label: string; items: NavItem[]; top: number };
 const navigation: NavEntry[] = [
   { label: "Dashboard", href: "/protected", icon: LayoutDashboard },
   {
+    label: "Setup",
+    icon: Settings,
+    items: [
+      { label: "Units", href: "/units", setupKey: "units", step: 1 },
+      { label: "Warehouses", href: "/warehouses", setupKey: "warehouses", step: 2 },
+      { label: "Items", href: "/items", setupKey: "items", step: 3 },
+      { label: "Vendors", href: "/vendors", setupKey: "vendors", step: 4 },
+      { label: "Customers", href: "/customers", setupKey: "customers", step: 5 },
+    ],
+  },
+  {
     label: "Inventory",
     icon: Boxes,
     items: [
       { label: "Stock overview", href: "/inventory" },
-      { label: "Items", href: "/items" },
-      { label: "Units", href: "/units" },
-      { label: "Warehouses", href: "/warehouses" },
       { label: "Stock movements", href: "/stock-movements" },
       { label: "Adjustments", href: "/inventory-adjustment" },
       { label: "Transfers", href: "/inventory-transfers" },
@@ -52,7 +62,6 @@ const navigation: NavEntry[] = [
     label: "Purchases",
     icon: ShoppingCart,
     items: [
-      { label: "Vendors", href: "/vendors" },
       { label: "Purchase orders", href: "/purchase-orders" },
       { label: "Goods receipts", href: "/goods-receipts" },
     ],
@@ -61,7 +70,6 @@ const navigation: NavEntry[] = [
     label: "Sales",
     icon: ReceiptText,
     items: [
-      { label: "Customers", href: "/customers" },
       { label: "Sales orders", href: "/sales-orders" },
       { label: "Fulfillments", href: "/sales-fulfillments" },
       { label: "Invoices", href: "/invoices" },
@@ -89,26 +97,31 @@ function initials(name: string, fallback: string) {
 
 function NavContent({
   collapsed,
+  setupProgress,
   onNavigate,
   onFlyoutOpen,
   onFlyoutClose,
 }: {
   collapsed: boolean;
+  setupProgress: SetupProgress;
   onNavigate?: () => void;
   onFlyoutOpen: (group: NavGroup, trigger: HTMLElement) => void;
   onFlyoutClose: () => void;
 }) {
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({
+    Setup: true,
     Inventory: true,
     Purchases: true,
     Sales: true,
   });
+  const setupComplete = Object.values(setupProgress).filter(Boolean).length;
 
   return (
     <nav className="sidebar-scroll flex-1 overflow-y-auto px-3 py-4">
       {!collapsed && (
-        <p className="mb-2 px-3 text-[10px] font-semibold uppercase tracking-[0.18em] text-[#7da48b]">
-          Workspace
+        <p className="mb-2 flex items-center justify-between px-3 text-[10px] font-semibold uppercase tracking-[0.18em] text-[#7da48b]">
+          <span>Workspace</span>
+          <span className="tracking-normal text-[#92ad9a]">{setupComplete}/5 setup</span>
         </p>
       )}
       <div className="space-y-1">
@@ -169,7 +182,12 @@ function NavContent({
                       onClick={onNavigate}
                       className="block rounded-lg px-3 py-2 text-xs text-[#92ad9a] transition hover:bg-[#16291e] hover:text-white"
                     >
-                      {item.label}
+                      <span className="flex items-center gap-2">
+                        {item.step && <span className="grid size-5 shrink-0 place-items-center rounded-full border border-[#52735b] text-[10px] font-semibold text-[#b8cbbd]" aria-label={`Step ${item.step}`}>
+                          {item.step}
+                        </span>}
+                        <span>{item.label}</span>
+                      </span>
                     </Link>
                   ))}
                 </div>
@@ -184,6 +202,7 @@ function NavContent({
 
 function Sidebar({
   collapsed,
+  setupProgress,
   mobileOpen,
   businessName,
   userName,
@@ -192,6 +211,7 @@ function Sidebar({
   onClose,
 }: {
   collapsed: boolean;
+  setupProgress: SetupProgress;
   mobileOpen: boolean;
   businessName: string;
   userName: string;
@@ -266,6 +286,7 @@ function Sidebar({
         </div>
         <NavContent
           collapsed={collapsed}
+          setupProgress={setupProgress}
           onNavigate={onClose}
           onFlyoutOpen={openFlyout}
           onFlyoutClose={closeFlyout}
@@ -289,7 +310,14 @@ function Sidebar({
                   }}
                   className="block rounded-lg px-3 py-2 text-xs text-[#92ad9a] transition hover:bg-[#1a3825] hover:text-white"
                 >
-                  {item.label}
+                  <span className="flex items-center gap-2">
+                    {item.step && (
+                      <span className="grid size-5 shrink-0 place-items-center rounded-full border border-[#52735b] text-[10px] font-semibold text-[#b8cbbd]">
+                        {item.step}
+                      </span>
+                    )}
+                    <span>{item.label}</span>
+                  </span>
                 </Link>
               ))}
             </div>
@@ -312,7 +340,7 @@ function Sidebar({
   );
 }
 
-export function DashboardShell({ businessName, userName, email, children }: { businessName: string; userName: string; email: string; children?: React.ReactNode }) {
+export function DashboardShell({ businessName, userName, email, setupProgress, children }: { businessName: string; userName: string; email: string; setupProgress: SetupProgress; children?: React.ReactNode }) {
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
 
@@ -320,6 +348,7 @@ export function DashboardShell({ businessName, userName, email, children }: { bu
     <div className="min-h-dvh bg-[#f7f8fa] text-[#0f172a]">
       <Sidebar
         collapsed={collapsed}
+        setupProgress={setupProgress}
         mobileOpen={mobileOpen}
         businessName={businessName}
         userName={userName}

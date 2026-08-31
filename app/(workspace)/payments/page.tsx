@@ -4,7 +4,7 @@ import { PaymentRegister, type PaymentRegisterRow, type PaymentSummary } from "@
 import { assertWorkspace, getWorkspaceContext } from "@/lib/supabase/workspace";
 
 const PAGE_SIZE = 50;
-const methods = ["cash", "card", "upi", "bank_transfer", "other"] as const;
+const methods = ["cash", "card", "upi", "bank_transfer", "other", "customer_credit"] as const;
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
 
 function pageNumber(value: string | undefined) {

@@ -12,7 +12,7 @@ export type PaymentRegisterRow = {
   invoice_status: "issued" | "cancelled";
   amount: string | number;
   payment_date: string;
-  payment_method: "cash" | "card" | "upi" | "bank_transfer" | "other";
+  payment_method: "cash" | "card" | "upi" | "bank_transfer" | "other" | "customer_credit";
   reference: string | null;
   notes: string | null;
   created_by: string;
@@ -22,7 +22,7 @@ export type PaymentRegisterRow = {
 
 export type PaymentSummary = { collected_today: string | number; collected_this_month: string | number; outstanding_amount: string | number; paid_invoice_count: number };
 
-const methodLabels: Record<PaymentRegisterRow["payment_method"], string> = { cash: "Cash", card: "Card", upi: "UPI", bank_transfer: "Bank transfer", other: "Other" };
+const methodLabels: Record<PaymentRegisterRow["payment_method"], string> = { cash: "Cash", card: "Card", upi: "UPI", bank_transfer: "Bank transfer", other: "Other", customer_credit: "Customer credit" };
 const statusClasses: Record<PaymentRegisterRow["invoice_status"], string> = { issued: "bg-[#e6f8ee] text-[#08752e]", cancelled: "bg-[#feecec] text-[#b42318]" };
 
 function number(value: string | number) { const parsed = Number(value); return Number.isFinite(parsed) ? parsed : 0; }
