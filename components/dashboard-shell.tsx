@@ -79,7 +79,6 @@ const navigation: NavEntry[] = [
   },
   { label: "Reports", href: "/reports", icon: FileText },
   { label: "Roles & permissions", href: "/roles-permissions", icon: ShieldCheck },
-  { label: "Settings", href: "/settings", icon: Settings },
 ];
 
 const metrics = [
