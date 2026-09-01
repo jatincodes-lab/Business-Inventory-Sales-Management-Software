@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 
-import { createAdminClient } from "@/lib/supabase/admin";
+import { createAdminClient, hasAdminSecret } from "@/lib/supabase/admin";
 import { getWorkspaceContext } from "@/lib/supabase/workspace";
 
 export type InvitationActionResult = { ok: boolean; message: string };
@@ -59,6 +59,7 @@ export async function inviteWorkspaceUser(formData: FormData): Promise<Invitatio
 
   const { context, result } = await managerContext();
   if (result) return result;
+  if (!hasAdminSecret()) return { ok: false, message: "User invitations are not configured. Add the server-only Supabase secret key." };
   let invitationId = "";
   try {
     const invitation = await context.supabase.rpc("create_workspace_invitation", { p_email: email, p_full_name: fullName, p_role_id: roleId });
@@ -88,6 +89,7 @@ export async function resendWorkspaceInvitation(formData: FormData): Promise<Inv
   if (!UUID_PATTERN.test(invitationId)) return { ok: false, message: "This invitation ID is invalid." };
   const { context, result } = await managerContext();
   if (result) return result;
+  if (!hasAdminSecret()) return { ok: false, message: "User invitations are not configured. Add the server-only Supabase secret key." };
   const current = await context.supabase.rpc("get_workspace_invitation", { p_invitation_id: invitationId });
   if (current.error || !current.data || typeof current.data !== "object") return errorMessage(current.error || { message: "Invitation not found" }, "Unable to load this invitation.");
   const invitation = current.data as { email?: unknown; full_name?: unknown; auth_user_id?: unknown; status?: unknown; last_sent_at?: unknown };
