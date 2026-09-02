@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import { Check, Clock3, LockKeyhole, Mail, Plus, Send, ShieldCheck, Trash2, UserPlus, Users, X } from "lucide-react";
 
 import { createRole, deleteRole, setRoleUser, updateRoleName, updateRolePermissions } from "@/app/actions/roles-permissions";
@@ -25,6 +26,7 @@ function dateTime(value: string) {
 }
 
 export function RolesPermissionsPage({ data }: { data: RoleManagementData }) {
+  const router = useRouter();
   const [selectedId, setSelectedId] = useState(data.roles[0]?.id ?? "");
   const [drafts, setDrafts] = useState<Record<string, PermissionKey[]>>(() => Object.fromEntries(data.roles.map((role) => [role.id, role.permission_keys])));
   const [message, setMessage] = useState<{ text: string; ok: boolean } | null>(null);
@@ -81,7 +83,7 @@ export function RolesPermissionsPage({ data }: { data: RoleManagementData }) {
     startTransition(async () => {
       const result = await updateRolePermissions(formData);
       setMessage({ text: result.message, ok: result.ok });
-      if (result.ok) window.location.reload();
+      if (result.ok) router.refresh();
     });
   };
 
@@ -93,7 +95,7 @@ export function RolesPermissionsPage({ data }: { data: RoleManagementData }) {
     startTransition(async () => {
       const result = await updateRoleName(formData);
       setMessage({ text: result.message, ok: result.ok });
-      if (result.ok) window.location.reload();
+      if (result.ok) router.refresh();
     });
   };
 
@@ -111,7 +113,7 @@ export function RolesPermissionsPage({ data }: { data: RoleManagementData }) {
       setCreateOpen(false);
       setNewRoleName("");
       setTemplateKey("custom");
-      window.location.reload();
+      router.refresh();
     });
   };
 
@@ -123,7 +125,7 @@ export function RolesPermissionsPage({ data }: { data: RoleManagementData }) {
       const result = await deleteRole(formData);
       setDeleteOpen(false);
       setMessage({ text: result.message, ok: result.ok });
-      if (result.ok) window.location.reload();
+      if (result.ok) router.refresh();
     });
   };
 
@@ -139,7 +141,7 @@ export function RolesPermissionsPage({ data }: { data: RoleManagementData }) {
         setInviteOpen(false);
         setInviteName("");
         setInviteEmail("");
-        window.location.reload();
+        router.refresh();
       }
     });
   };
@@ -150,7 +152,7 @@ export function RolesPermissionsPage({ data }: { data: RoleManagementData }) {
     startTransition(async () => {
       const result = await resendWorkspaceInvitation(formData);
       setMessage({ text: result.message, ok: result.ok });
-      if (result.ok) window.location.reload();
+      if (result.ok) router.refresh();
     });
   };
 
@@ -162,7 +164,7 @@ export function RolesPermissionsPage({ data }: { data: RoleManagementData }) {
       const result = await revokeWorkspaceInvitation(formData);
       setRevokeInvitationId(null);
       setMessage({ text: result.message, ok: result.ok });
-      if (result.ok) window.location.reload();
+      if (result.ok) router.refresh();
     });
   };
 
@@ -175,7 +177,7 @@ export function RolesPermissionsPage({ data }: { data: RoleManagementData }) {
     startTransition(async () => {
       const result = await setRoleUser(formData);
       setMessage({ text: result.message, ok: result.ok });
-      if (result.ok) window.location.reload();
+      if (result.ok) router.refresh();
     });
   };
 
